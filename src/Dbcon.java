@@ -15,7 +15,7 @@ public class Dbcon {
     public Dbcon() {
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            con = DriverManager.getConnection("jdbc:mysql://localhost/cmpus_dairy_db", "root", "root");
+            con = DriverManager.getConnection("jdbc:mysql://localhost:3307/getjob_db", "root", "root");
             stmt = con.createStatement();
         } catch (Exception ex) {
             ex.printStackTrace();

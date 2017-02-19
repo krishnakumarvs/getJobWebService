@@ -43,14 +43,21 @@ public class Server {
 		});
 
 		post("/getAllCompanies", (request, response) -> {
-			String data = request.body();
-			System.out.println(data);
+			String body = request.body();
+			System.out.println(body);
+			JSONObject responseData = new JSONObject();
+
 			JSONParser jsonParser = new JSONParser();
 			try {
-				JSONObject dataJson = (JSONObject) jsonParser.parse(data);
-				String userName = dataJson.get("userName").toString();
+				JSONObject jsonData = (JSONObject) jsonParser
+						.parse(body);
+				String userName = jsonData.get("userName").toString();
 			} catch (ParseException e) {
-
+				System.out.println("Error in parseing json data");
+				System.out.println(e);
+				responseData.put("result", false);
+				responseData.put("description",
+						"Please send a valid json");
 			}
 			return "ok";
 		});
