@@ -48,6 +48,8 @@ Forgot password api - email passwrod generation option - service
 
 Show selected photo in UI - edit profile - android
 
+user registtration - check email already exists - server
+
 
 completed
 ~~~~~~~~~~
