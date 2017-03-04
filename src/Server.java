@@ -242,6 +242,89 @@ public class Server {
 					return responseData;
 				});
 
+		post("/registration",
+				(request, response) -> {
+					System.out.println("registration  API call "
+							+ request.body() + " --- end ");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
+					JSONObject payload = new JSONObject();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+
+						if (jsonData.get("name") == null
+								|| jsonData.get("email_id") == null
+								|| jsonData.get("password") == null) {
+
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send all the user details");
+						} else {
+							Dbcon db = new Dbcon();
+
+							String sql = "insert into tbl_userview (name,email_id,password) values('"
+									+ jsonData.get("name")
+									+ "' ,"
+									+ " '"
+									+ jsonData.get("email_id")
+									+ "' , '"
+									+ jsonData.get("password") + "' )";
+
+							int update = db.update(sql);
+							if (update <= 0) {
+								responseData.put("result", false);
+								responseData
+										.put("description",
+												"Could not update now, Please try again later");
+							} else {
+
+								sql = "SELECT * FROM tbl_userview WHERE id = (SELECT MAX(id) FROM tbl_userview)";
+								ResultSet rs = db.select(sql);
+
+								if (rs.next()) {
+									responseData.put("result", true);
+									responseData.put("description",
+											"Registration success");
+									payload.put("name", rs.getString("name"));
+									payload.put("email_id",
+											rs.getString("email_id"));
+									payload.put("phone", rs.getString("phone"));
+
+									payload.put("userId", rs.getString("id"));
+									payload.put("address",
+											rs.getString("address"));
+									payload.put("dob", rs.getString("dob"));
+									payload.put("age", rs.getString("age"));
+									payload.put("qualification",
+											rs.getString("qualification"));
+									payload.put("experience",
+											rs.getString("experience"));
+									payload.put("photo", rs.getString("photo"));
+									responseData.put("payload", payload);
+								} else {
+									responseData.put("result", false);
+									responseData
+											.put("description",
+													"Could not update now, Please try again later");
+								}
+
+							}
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					}
+
+					return responseData;
+				});
+
 		post("/upload",
 				"multipart/form-data",
 				(request, response) -> {
@@ -449,7 +532,8 @@ public class Server {
 									+ "' , ' "
 									+ jsonData.get("announcementId")
 									+ "' , '"
-									+ System.currentTimeMillis() + "' , 'Requested')";
+									+ System.currentTimeMillis()
+									+ "' , 'Requested')";
 
 							int ins = db.insert(sql);
 							if (ins <= 0) {

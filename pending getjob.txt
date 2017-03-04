@@ -1,0 +1,59 @@
+
+Pending works
+~~~~~~~~~~
+
+home page company details API - service
+home page company details display - android
+
+company details page - android
+
+
+edit profile page styling - padding in text fields -  android
+
+announcement page descrition style correction - handle large description text - android
+
+
+announcement details page stlying -  beautification - android
+
+
+announcement apply limit -  check if already applied - service
+
+
+about us data proper - android
+
+help page data proper - android
+
+
+Menu -  show change password instead of settings and move it above - andoid
+page for change password.- android
+Controoler if change passwrd - API calling to change password - android
+
+change password API creation  -  service
+
+Notification page - show delete option in UI and call delete API after confirming -  android
+
+delete notification API - service
+
+
+company add image - edit image - swing java
+company view request page - join query - swing java
+
+
+registration page styling - padding issue - android
+
+
+Forgot password page - android
+
+Forgot password api - email passwrod generation option - service
+
+Show selected photo in UI - edit profile - android
+
+
+completed
+~~~~~~~~~~
+
+
+Go to edit profile page after registration - android
+
+
+
