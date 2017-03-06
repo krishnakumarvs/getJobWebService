@@ -54,7 +54,7 @@ public class Server {
 			return "ok";
 		});
 
-		post("/getAllCompanies", (request, response) -> {
+		post("/getAllCompaniesOld", (request, response) -> {
 			String body = request.body();
 			System.out.println(body);
 			JSONObject responseData = new JSONObject();
@@ -128,6 +128,70 @@ public class Server {
 								responseData.put("result", false);
 								responseData.put("description",
 										"Login failed, Incorrect credentials");
+							}
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					}
+
+					return responseData;
+				});
+
+		post("/forgotPassword",
+				(request, response) -> {
+					System.out.println("forgotPassword API called --- ");
+					String body = request.body();
+					JSONObject responseData = new JSONObject();
+
+					System.out.println("received data as " + body);
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+						System.out.println("Data is parsed sucess ");
+
+						if (jsonData.get("name") == null
+								|| jsonData.get("email_id") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send name and email id");
+						} else {
+							String name = (String) jsonData.get("name");
+							String email_id = (String) jsonData.get("email_id");
+							JSONObject payload = new JSONObject();
+
+							Dbcon db = new Dbcon();
+							String sql = "select * from tbl_userview where email_id='"
+									+ email_id + "' and name='" + name + "'";
+							ResultSet rs = db.select(sql);
+							if (rs.next()) {
+								String newPassword = MailSender
+										.generatePassword(5);
+								new Dbcon()
+										.update("update tbl_userview set password='"
+												+ newPassword
+												+ "' where email_id='"
+												+ email_id + "'");
+								String messageBody = "Hi, you have requested to change password, and your new password will be "
+										+ newPassword
+										+ ". Please log in and change password immediately";
+								String to[] = { email_id };
+								MailSender.sendFromGMail(to,
+										"Get Job - Forgot password ",
+										messageBody);
+								responseData.put("result", true);
+								responseData
+										.put("description",
+												"Password is reseted, please check your email");
+							} else {
+								responseData.put("result", false);
+								responseData.put("description",
+										"No such account could be found");
 							}
 						}
 					} catch (ParseException pe) {
@@ -266,52 +330,66 @@ public class Server {
 						} else {
 							Dbcon db = new Dbcon();
 
-							String sql = "insert into tbl_userview (name,email_id,password) values('"
-									+ jsonData.get("name")
-									+ "' ,"
-									+ " '"
-									+ jsonData.get("email_id")
-									+ "' , '"
-									+ jsonData.get("password") + "' )";
+							ResultSet rsss = new Dbcon()
+									.select("select * from tbl_userview where email_id='"
+											+ jsonData.get("email_id") + "'");
 
-							int update = db.update(sql);
-							if (update <= 0) {
+							if (rsss.next()) {
 								responseData.put("result", false);
-								responseData
-										.put("description",
-												"Could not update now, Please try again later");
+								responseData.put("description",
+										"Sorry, Email Id already registered");
 							} else {
+								String sql = "insert into tbl_userview (name,email_id,password) values('"
+										+ jsonData.get("name")
+										+ "' ,"
+										+ " '"
+										+ jsonData.get("email_id")
+										+ "' , '"
+										+ jsonData.get("password") + "' )";
 
-								sql = "SELECT * FROM tbl_userview WHERE id = (SELECT MAX(id) FROM tbl_userview)";
-								ResultSet rs = db.select(sql);
-
-								if (rs.next()) {
-									responseData.put("result", true);
-									responseData.put("description",
-											"Registration success");
-									payload.put("name", rs.getString("name"));
-									payload.put("email_id",
-											rs.getString("email_id"));
-									payload.put("phone", rs.getString("phone"));
-
-									payload.put("userId", rs.getString("id"));
-									payload.put("address",
-											rs.getString("address"));
-									payload.put("dob", rs.getString("dob"));
-									payload.put("age", rs.getString("age"));
-									payload.put("qualification",
-											rs.getString("qualification"));
-									payload.put("experience",
-											rs.getString("experience"));
-									payload.put("photo", rs.getString("photo"));
-									responseData.put("payload", payload);
-								} else {
+								int update = db.update(sql);
+								if (update <= 0) {
 									responseData.put("result", false);
 									responseData
 											.put("description",
 													"Could not update now, Please try again later");
-								}
+								} else {
 
+									sql = "SELECT * FROM tbl_userview WHERE id = (SELECT MAX(id) FROM tbl_userview)";
+									ResultSet rs = db.select(sql);
+
+									if (rs.next()) {
+										responseData.put("result", true);
+										responseData.put("description",
+												"Registration success");
+										payload.put("name",
+												rs.getString("name"));
+										payload.put("email_id",
+												rs.getString("email_id"));
+										payload.put("phone",
+												rs.getString("phone"));
+
+										payload.put("userId",
+												rs.getString("id"));
+										payload.put("address",
+												rs.getString("address"));
+										payload.put("dob", rs.getString("dob"));
+										payload.put("age", rs.getString("age"));
+										payload.put("qualification",
+												rs.getString("qualification"));
+										payload.put("experience",
+												rs.getString("experience"));
+										payload.put("photo",
+												rs.getString("photo"));
+										responseData.put("payload", payload);
+									} else {
+										responseData.put("result", false);
+										responseData
+												.put("description",
+														"Could not update now, Please try again later");
+									}
+
+								}
 							}
 						}
 					} catch (ParseException pe) {
@@ -446,6 +524,61 @@ public class Server {
 
 					return responseData;
 				});
+
+		post("/getAllCompanies", (request, response) -> {
+			System.out.println("getAllCompanies  API call " + request.body()
+					+ " --- end ");
+			String body = request.body();
+
+			JSONObject responseData = new JSONObject();
+			JSONParser jsonParser = new JSONParser();
+
+			try {
+				JSONObject jsonData = (JSONObject) jsonParser.parse(body);
+
+				// DELETE
+				/* jsonData.put("userId", "1"); */
+
+				if (false) {
+					responseData.put("result", false);
+					responseData.put("description", "Please send user ID");
+				} else {
+					JSONObject payload = new JSONObject();
+					JSONArray dataarray = new JSONArray();
+					Dbcon db = new Dbcon();
+
+					String sql = "SELECT * from tbl_company";
+					ResultSet rs = db.select(sql);
+					while (rs.next()) {
+						JSONObject notify = new JSONObject();
+
+						notify.put("id", rs.getString("id"));
+
+						notify.put("name", rs.getString("name"));
+						notify.put("website", rs.getString("website"));
+						notify.put("mail_id", rs.getString("mail_id"));
+						notify.put("phone_no", rs.getString("phone_no"));
+						notify.put("address", rs.getString("address"));
+						notify.put("description", rs.getString("discription"));
+						notify.put("image", rs.getString("image"));
+
+						dataarray.add(notify);
+					}
+					responseData.put("result", true);
+					responseData.put("description", "Sucessfully fetched ");
+					responseData.put("payload", dataarray);
+				}
+			} catch (ParseException pe) {
+				System.out.println("Error in parseing json data");
+				System.out.println(pe);
+				responseData.put("result", false);
+				responseData.put("description", "Please send a valid json");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			return responseData;
+		});
 
 		post("/getNotifications", (request, response) -> {
 			System.out.println("getNotifications  API call " + request.body()
@@ -623,5 +756,4 @@ public class Server {
 				});
 
 	}
-
 }
