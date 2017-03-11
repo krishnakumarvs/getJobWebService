@@ -609,7 +609,7 @@ public class Server {
 						notify.put("phone_no", rs.getString("phone_no"));
 						notify.put("address", rs.getString("address"));
 						notify.put("description", rs.getString("discription"));
-						notify.put("image", rs.getString("image"));
+						notify.put("photo", rs.getString("photo"));
 
 						dataarray.add(notify);
 					}
