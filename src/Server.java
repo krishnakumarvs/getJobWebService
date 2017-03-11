@@ -508,6 +508,59 @@ public class Server {
 
 			return responseData;
 		});
+		
+		
+		
+		
+		post("/deleteMessage", (request, response) -> {
+			System.out.println("getMessage  API call " + request.body()
+					+ " --- end ");
+			String body = request.body();
+
+			JSONObject responseData = new JSONObject();
+			JSONParser jsonParser = new JSONParser();
+
+			try {
+				JSONObject jsonData = (JSONObject) jsonParser.parse(body);
+
+				// DELETE
+				/* jsonData.put("userId", "1"); */
+
+				if (jsonData.get("messageId") == null) {
+					responseData.put("result", false);
+					responseData.put("description",
+							"Please send message Id");
+				} else {
+					JSONObject payload = new JSONObject();
+					Dbcon db = new Dbcon();
+
+					String sql = "delete from tbl_message where id='"
+							+ jsonData.get("messageId") + "'";
+
+					int upt = db.update(sql);
+					if (upt > 0) {
+						responseData.put("result", true);
+						responseData.put("description",
+								"Sucessfully deleted message");
+					} else {
+						responseData.put("result", false);
+						responseData.put("description",
+								"Could not delete message");
+					}
+
+				}
+			} catch (ParseException pe) {
+				System.out.println("Error in parseing json data");
+				System.out.println(pe);
+				responseData.put("result", false);
+				responseData.put("description", "Please send a valid json");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			return responseData;
+		});
+		
 
 		post("/getAnnouncement",
 				(request, response) -> {
@@ -690,6 +743,78 @@ public class Server {
 
 					return responseData;
 				});
+		
+		
+		
+		post("/getMessages",
+				(request, response) -> {
+					System.out.println("getMessages  API call "
+							+ request.body() + " --- end ");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+
+						// DELETE
+						/* jsonData.put("userId", "1"); */
+
+						if (jsonData.get("userId") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send user ID");
+						} else {
+							JSONObject payload = new JSONObject();
+							JSONArray dataarray = new JSONArray();
+							Dbcon db = new Dbcon();
+
+							String sql = "SELECT * FROM tbl_message where userid='"
+									+ jsonData.get("userId") + "' order by id desc"; // add where
+							// conditions
+							// to show
+							// notification
+							// only for
+							// articular
+							// user
+							ResultSet rs = db.select(sql);
+							while (rs.next()) {
+								JSONObject notify = new JSONObject();
+
+								notify.put("title", rs.getString("title"));
+								notify.put("id", rs.getString("company_id"));
+								notify.put("description",
+										rs.getString("description"));
+								notify.put("date",
+										rs.getString("interview_date"));
+								notify.put("time",
+										rs.getString("time"));
+								
+
+								dataarray.add(notify);
+							}
+							responseData.put("result", true);
+							responseData.put("description",
+									"Sucessfully fetched ");
+							responseData.put("payload", dataarray);
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					return responseData;
+				});
+		
+		
+		
 
 		post("/applyJob",
 				(request, response) -> {
