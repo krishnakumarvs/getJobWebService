@@ -744,6 +744,70 @@ public class Server {
 					return responseData;
 				});
 		
+		post("/getAllMessages",
+				(request, response) -> {
+					System.out.println("getAllMessages  API call "
+							+ request.body() + " --- end ");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+
+						// DELETE
+						/* jsonData.put("userId", "1"); */
+
+						if (jsonData.get("userId") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send user ID");
+						} else {
+							JSONObject payload = new JSONObject();
+							JSONArray dataarray = new JSONArray();
+							Dbcon db = new Dbcon();
+
+							String sql = "SELECT msg.*, comp.name as companyName FROM tbl_message as msg , tbl_company as comp where msg.userid='"
+									+ jsonData.get("userId") + "' and msg.company_id=comp.id order by msg.id desc"; // add where
+							// conditions
+							// to show
+							// messages
+							// only for
+							// articular
+							// user
+							ResultSet rs = db.select(sql);
+							while (rs.next()) {
+								JSONObject notify = new JSONObject();
+
+								notify.put("title", rs.getString("title"));
+								notify.put("id", rs.getString("id"));
+								notify.put("description",
+										rs.getString("discription"));
+								notify.put("interview_date", rs.getString("interview_date"));
+								notify.put("times", rs.getString("times"));
+								notify.put("companyName", rs.getString("companyName"));
+								dataarray.add(notify);
+							}
+							responseData.put("result", true);
+							responseData.put("description",
+									"Sucessfully fetched ");
+							responseData.put("payload", dataarray);
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					return responseData;
+				});
+		
 		
 		
 		post("/getMessages",
