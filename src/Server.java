@@ -508,59 +508,58 @@ public class Server {
 
 			return responseData;
 		});
-		
-		
-		
-		
-		post("/deleteMessage", (request, response) -> {
-			System.out.println("getMessage  API call " + request.body()
-					+ " --- end ");
-			String body = request.body();
 
-			JSONObject responseData = new JSONObject();
-			JSONParser jsonParser = new JSONParser();
+		post("/deleteMessage",
+				(request, response) -> {
+					System.out.println("deleteMessage API call "
+							+ request.body() + " --- end ");
+					String body = request.body();
 
-			try {
-				JSONObject jsonData = (JSONObject) jsonParser.parse(body);
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
 
-				// DELETE
-				/* jsonData.put("userId", "1"); */
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
 
-				if (jsonData.get("messageId") == null) {
-					responseData.put("result", false);
-					responseData.put("description",
-							"Please send message Id");
-				} else {
-					JSONObject payload = new JSONObject();
-					Dbcon db = new Dbcon();
+						// DELETE
+						/* jsonData.put("userId", "1"); */
 
-					String sql = "delete from tbl_message where id='"
-							+ jsonData.get("messageId") + "'";
+						if (jsonData.get("messageId") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send message Id");
+						} else {
+							JSONObject payload = new JSONObject();
+							Dbcon db = new Dbcon();
 
-					int upt = db.update(sql);
-					if (upt > 0) {
-						responseData.put("result", true);
-						responseData.put("description",
-								"Sucessfully deleted message");
-					} else {
+							String sql = "delete from tbl_message where id="
+									+ jsonData.get("messageId") + "";
+
+							int upt = db.update(sql);
+							if (upt > 0) {
+								responseData.put("result", true);
+								responseData.put("description",
+										"Sucessfully deleted message");
+							} else {
+								responseData.put("result", false);
+								responseData.put("description",
+										"Could not delete message");
+							}
+
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
 						responseData.put("result", false);
 						responseData.put("description",
-								"Could not delete message");
+								"Please send a valid json");
+					} catch (Exception e) {
+						e.printStackTrace();
 					}
 
-				}
-			} catch (ParseException pe) {
-				System.out.println("Error in parseing json data");
-				System.out.println(pe);
-				responseData.put("result", false);
-				responseData.put("description", "Please send a valid json");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-			return responseData;
-		});
-		
+					return responseData;
+				});
 
 		post("/getAnnouncement",
 				(request, response) -> {
@@ -682,6 +681,86 @@ public class Server {
 			return responseData;
 		});
 
+		post("/getRecentInterviewDates",
+				(request, response) -> {
+					System.out.println("getRecentInterviewDates  API call "
+							+ request.body() + " --- end ");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+
+						if (jsonData.get("userId") == null) {
+
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send semester ");
+						} else {
+							JSONObject payload = new JSONObject();
+							Dbcon db = new Dbcon();
+
+							String sql = "select * from tbl_message where userid = "
+									+ jsonData.get("userId")
+									+ " and date_milli IS NOT NULL";
+							System.out.println(sql);
+							ResultSet rs = db.select(sql);
+							JSONArray jarray =  new JSONArray();
+							while (rs.next()) {
+								String interviewDateMilliString = rs
+										.getString("date_milli");
+
+								long interviewDateMilli = Long
+										.parseLong(interviewDateMilliString);
+
+								long oneDay = 24 * 60 * 60 * 1000;
+
+								long noOfDaysForInterview = interviewDateMilli
+										- System.currentTimeMillis();
+								System.out.println(" milli sec diff = "
+										+ noOfDaysForInterview);
+
+								noOfDaysForInterview = noOfDaysForInterview / oneDay;
+
+								System.out.println("No of days for interview "
+										+ noOfDaysForInterview);
+
+								if (noOfDaysForInterview <= 5
+										&& noOfDaysForInterview >= 1) {
+									JSONObject resutPay = new JSONObject();
+									resutPay.put("noOfDaysForInterview",
+											noOfDaysForInterview);
+
+									resutPay.put("description",
+											"You have on interview at " + rs.getString("title") + " in "
+													+ noOfDaysForInterview + " days");
+									
+									jarray.add(resutPay);
+	
+								}
+							}
+							
+							responseData.put("result", true);
+							responseData.put("description",
+									"Sucessfully fetched");
+							responseData.put("payload", jarray);
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					return responseData;
+				});
+
 		post("/getNotifications",
 				(request, response) -> {
 					System.out.println("getNotifications  API call "
@@ -708,7 +787,8 @@ public class Server {
 							Dbcon db = new Dbcon();
 
 							String sql = "SELECT * FROM tbl_notification where userid='"
-									+ jsonData.get("userId") + "' order by id desc"; // add where
+									+ jsonData.get("userId")
+									+ "' order by id desc"; // add where
 							// conditions
 							// to show
 							// notification
@@ -743,7 +823,7 @@ public class Server {
 
 					return responseData;
 				});
-		
+
 		post("/getAllMessages",
 				(request, response) -> {
 					System.out.println("getAllMessages  API call "
@@ -770,7 +850,9 @@ public class Server {
 							Dbcon db = new Dbcon();
 
 							String sql = "SELECT msg.*, comp.name as companyName FROM tbl_message as msg , tbl_company as comp where msg.userid='"
-									+ jsonData.get("userId") + "' and msg.company_id=comp.id order by msg.id desc"; // add where
+									+ jsonData.get("userId")
+									+ "' and msg.company_id=comp.id order by msg.id desc"; // add
+																							// where
 							// conditions
 							// to show
 							// messages
@@ -785,9 +867,11 @@ public class Server {
 								notify.put("id", rs.getString("id"));
 								notify.put("description",
 										rs.getString("discription"));
-								notify.put("interview_date", rs.getString("interview_date"));
+								notify.put("interview_date",
+										rs.getString("interview_date"));
 								notify.put("times", rs.getString("times"));
-								notify.put("companyName", rs.getString("companyName"));
+								notify.put("companyName",
+										rs.getString("companyName"));
 								dataarray.add(notify);
 							}
 							responseData.put("result", true);
@@ -807,9 +891,7 @@ public class Server {
 
 					return responseData;
 				});
-		
-		
-		
+
 		post("/getMessages",
 				(request, response) -> {
 					System.out.println("getMessages  API call "
@@ -835,8 +917,10 @@ public class Server {
 							JSONArray dataarray = new JSONArray();
 							Dbcon db = new Dbcon();
 
-							String sql = "SELECT * FROM tbl_message where userid='"
-									+ jsonData.get("userId") + "' order by id desc"; // add where
+							String sql = "SELECT msg.*, comp.name as cName FROM tbl_message as msg, tbl_company as comp where msg.userid='"
+									+ jsonData.get("userId")
+									+ "' and msg.company_id=comp.id order by msg.id desc"; // add
+																							// where
 							// conditions
 							// to show
 							// notification
@@ -848,14 +932,14 @@ public class Server {
 								JSONObject notify = new JSONObject();
 
 								notify.put("title", rs.getString("title"));
-								notify.put("id", rs.getString("company_id"));
+								notify.put("id", rs.getString("id"));
 								notify.put("description",
-										rs.getString("description"));
+										rs.getString("discription"));
 								notify.put("date",
 										rs.getString("interview_date"));
-								notify.put("time",
-										rs.getString("time"));
-								
+								notify.put("time", rs.getString("time"));
+								notify.put("comppanyname",
+										rs.getString("cName"));
 
 								dataarray.add(notify);
 							}
@@ -876,9 +960,6 @@ public class Server {
 
 					return responseData;
 				});
-		
-		
-		
 
 		post("/applyJob",
 				(request, response) -> {
