@@ -832,13 +832,14 @@ public class Server {
 							JSONObject payload = new JSONObject();
 							Dbcon db = new Dbcon();
 
-							String sql = "select * from tbl_message where userid = "
+							String sql = "SELECT msg.*, cmp.name AS cname FROM tbl_message AS msg,tbl_company AS cmp  WHERE msg.company_id = cmp.id AND msg.date_milli IS NOT NULL AND msg.userid="
 									+ jsonData.get("userId")
-									+ " and date_milli IS NOT NULL";
+									+ "";
 							System.out.println(sql);
 							ResultSet rs = db.select(sql);
 							JSONArray jarray = new JSONArray();
 							while (rs.next()) {
+								
 								String interviewDateMilliString = rs
 										.getString("date_milli");
 
@@ -867,7 +868,7 @@ public class Server {
 									resutPay.put(
 											"description",
 											"You have on interview at "
-													+ rs.getString("title")
+													+ rs.getString("cname")
 													+ " in "
 													+ noOfDaysForInterview
 													+ " days");
