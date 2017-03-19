@@ -122,12 +122,73 @@ public class Server {
 								payload.put("experience",
 										rs.getString("experience"));
 								payload.put("photo", rs.getString("photo"));
+								payload.put("resume", rs.getString("resume"));
 
 								responseData.put("payload", payload);
 							} else {
 								responseData.put("result", false);
 								responseData.put("description",
 										"Login failed, Incorrect credentials");
+							}
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					}
+
+					return responseData;
+				});
+
+		post("/changePassword",
+				(request, response) -> {
+					System.out.println("changePassword API called --- ");
+					String body = request.body();
+					JSONObject responseData = new JSONObject();
+
+					System.out.println("received data as " + body);
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+						System.out.println("Data is parsed sucess ");
+
+						if (jsonData.get("currentPass") == null
+								|| jsonData.get("newPass") == null
+								|| jsonData.get("userId") == null) {
+
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send all the values");
+						} else {
+							String currentPass = (String) jsonData.get("currentPass");
+							String newPass = (String) jsonData.get("newPass");
+							String userId = (String) jsonData.get("userId");
+							JSONObject payload = new JSONObject();
+
+							Dbcon db = new Dbcon();
+							String sql = "select * from tbl_userview where password='"+currentPass+"' and id='"+userId+"'";
+							ResultSet rs = db.select(sql);
+							if (rs.next()) {
+								
+								new Dbcon()
+										.update("update tbl_userview set password='"
+												+ newPass
+												+ "' where id='"
+												+ userId+ "'");
+								
+								
+								responseData.put("result", true);
+								responseData
+										.put("description",
+												"Password is changed");
+							} else {
+								responseData.put("result", false);
+								responseData.put("description",
+										"Sorry, current password is wrong");
 							}
 						}
 					} catch (ParseException pe) {
@@ -226,6 +287,7 @@ public class Server {
 								|| jsonData.get("dob") == null
 								|| jsonData.get("experience") == null
 								|| jsonData.get("qualification") == null
+								|| jsonData.get("resume") == null
 								|| jsonData.get("phone") == null) {
 
 							responseData.put("result", false);
@@ -238,6 +300,11 @@ public class Server {
 							if (jsonData.get("pic") != null) {
 								pic = jsonData.get("pic") + "";
 							}
+
+							String resume = "";
+							if (jsonData.get("resume") != null) {
+								resume = jsonData.get("resume") + "";
+							}
 							String sql = "update tbl_userview set name='"
 									+ jsonData.get("name") + "' , address='"
 									+ jsonData.get("address") + "' , phone='"
@@ -249,8 +316,9 @@ public class Server {
 									+ jsonData.get("email_id")
 									+ "', experience='"
 									+ jsonData.get("experience")
-									+ "' , photo='" + pic + "'"
-									+ " where id = " + jsonData.get("userId");
+									+ "' , photo='" + pic + "', resume='"
+									+ resume + "'" + " where id = '"
+									+ jsonData.get("userId") + "'";
 
 							int update = db.update(sql);
 							if (update <= 0) {
@@ -285,6 +353,8 @@ public class Server {
 									payload.put("experience",
 											rs.getString("experience"));
 									payload.put("photo", rs.getString("photo"));
+									payload.put("resume",
+											rs.getString("resume"));
 									responseData.put("payload", payload);
 								} else {
 									responseData.put("result", false);
@@ -381,6 +451,8 @@ public class Server {
 												rs.getString("experience"));
 										payload.put("photo",
 												rs.getString("photo"));
+										payload.put("resume",
+												rs.getString("resume"));
 										responseData.put("payload", payload);
 									} else {
 										responseData.put("result", false);
@@ -404,6 +476,63 @@ public class Server {
 				});
 
 		post("/upload",
+				"multipart/form-data",
+				(request, response) -> {
+					// - Servlet 3.x config
+				try {
+					String location = Constants.external_file_location;
+					long maxFileSize = 100000000;
+					long maxRequestSize = 100000000;
+					int fileSizeThreshold = 1024;
+
+					MultipartConfigElement multipartConfigElement = new MultipartConfigElement(
+							location, maxFileSize, maxRequestSize,
+							fileSizeThreshold);
+					request.raw().setAttribute(
+							"org.eclipse.jetty.multipartConfig",
+							multipartConfigElement);
+
+					Collection<Part> parts = request.raw().getParts();
+					for (Part part : parts) {
+
+						System.out.println("-------------------------");
+						System.out.println(part);
+						System.out.println("Name:");
+						System.out.println(part.getName());
+						System.out.println("Size: ");
+						System.out.println(part.getSize());
+						System.out.println("Filename:");
+						System.out.println(part.getSubmittedFileName());
+					}
+
+					System.out.println("request.body() ************** "
+							+ request.body());
+
+					String fName = request.raw().getPart("upfile")
+							.getSubmittedFileName();
+					System.out.println("Title: "
+							+ request.raw().getParameter("title"));
+					System.out.println("File: " + fName);
+
+					Part uploadedFile = request.raw().getPart("upfile");
+					Path out = Paths.get(Constants.external_file_location
+							+ request.raw().getParameter("title"));
+					try (final InputStream in = uploadedFile.getInputStream()) {
+						Files.copy(in, out);
+						uploadedFile.delete();
+					}
+					// cleanup
+					multipartConfigElement = null;
+					parts = null;
+					uploadedFile = null;
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				return "OK";
+			});
+
+		post("/upload_resume",
 				"multipart/form-data",
 				(request, response) -> {
 					// - Servlet 3.x config
@@ -708,7 +837,7 @@ public class Server {
 									+ " and date_milli IS NOT NULL";
 							System.out.println(sql);
 							ResultSet rs = db.select(sql);
-							JSONArray jarray =  new JSONArray();
+							JSONArray jarray = new JSONArray();
 							while (rs.next()) {
 								String interviewDateMilliString = rs
 										.getString("date_milli");
@@ -723,7 +852,8 @@ public class Server {
 								System.out.println(" milli sec diff = "
 										+ noOfDaysForInterview);
 
-								noOfDaysForInterview = noOfDaysForInterview / oneDay;
+								noOfDaysForInterview = noOfDaysForInterview
+										/ oneDay;
 
 								System.out.println("No of days for interview "
 										+ noOfDaysForInterview);
@@ -734,15 +864,19 @@ public class Server {
 									resutPay.put("noOfDaysForInterview",
 											noOfDaysForInterview);
 
-									resutPay.put("description",
-											"You have on interview at " + rs.getString("title") + " in "
-													+ noOfDaysForInterview + " days");
-									
+									resutPay.put(
+											"description",
+											"You have on interview at "
+													+ rs.getString("title")
+													+ " in "
+													+ noOfDaysForInterview
+													+ " days");
+
 									jarray.add(resutPay);
-	
+
 								}
 							}
-							
+
 							responseData.put("result", true);
 							responseData.put("description",
 									"Sucessfully fetched");
@@ -937,7 +1071,7 @@ public class Server {
 										rs.getString("discription"));
 								notify.put("date",
 										rs.getString("interview_date"));
-								notify.put("time", rs.getString("time"));
+								notify.put("time", rs.getString("times"));
 								notify.put("comppanyname",
 										rs.getString("cName"));
 
@@ -987,7 +1121,16 @@ public class Server {
 							if (jsonData.get("companyName") != null) {
 								companyName = jsonData.get("companyName") + "";
 							}
-							String sql = "insert into tbl_request (user_id,ann_id,date_milli, Status) values('"
+							String sql1="select * from tbl_request where user_id='"+jsonData.get("userId")+"' and ann_id='"+jsonData.get("announcementId")+"'";
+							ResultSet rs1 = db.select(sql1);
+							System.out.println(sql1);
+							if(rs1.next()){
+								responseData.put("result", false);
+								responseData.put("description",
+										"Already applied");
+							}
+							else{
+								String sql = "insert into tbl_request (user_id,ann_id,date_milli, Status) values('"
 									+ jsonData.get("userId")
 									+ "' , ' "
 									+ jsonData.get("announcementId")
@@ -1000,13 +1143,14 @@ public class Server {
 								responseData.put("result", false);
 								responseData
 										.put("description",
-												"Could not send feedback now, Please try again later");
+												"Could not send request now, Please try again later");
 							} else {
 								responseData.put("result", true);
 								responseData.put("description",
-										"Feedback posted successfully");
+										"Apply job successfully");
 							}
 						}
+					}
 					} catch (ParseException pe) {
 						System.out.println("Error in parseing json data");
 						System.out.println(pe);
