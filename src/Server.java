@@ -336,7 +336,7 @@ public class Server {
 									responseData.put("result", true);
 									responseData
 											.put("description",
-													"Student details updated successfully");
+													"user details updated successfully");
 									payload.put("name", rs.getString("name"));
 									payload.put("name", rs.getString("name"));
 									payload.put("email_id",
