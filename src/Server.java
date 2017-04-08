@@ -734,6 +734,8 @@ public class Server {
 										rs.getString("experience"));
 								notify.put("last_date",
 										rs.getString("date_in_milli"));
+								notify.put("salary",
+										rs.getString("salary"));
 
 								dataarray.add(notify);
 							}
